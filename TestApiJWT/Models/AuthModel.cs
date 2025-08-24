@@ -1,4 +1,6 @@
-﻿namespace TestApiJWT.Models
+﻿using System.Text.Json.Serialization;
+
+namespace TestApiJWT.Models
 {
     public class AuthModel
     {
@@ -11,9 +13,14 @@
 
 
         public string Token { get; set; }
-        public DateTime ExpiresIn { get; set; }
+        //public DateTime ExpiresIn { get; set; }
 
 
+
+        // We use JsonIgnore to ignore the column and not return it from database 
+        [JsonIgnore]
+        public string? RefreshToken { get; set; }
+        public DateTime RefreshTokenExpiration { get; set; }
     }
 
 }

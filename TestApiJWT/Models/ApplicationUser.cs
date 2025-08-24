@@ -10,6 +10,14 @@ namespace TestApiJWT.Models
         [MaxLength(100), Required]
         public string LastName { get; set; }
 
+
+
+
+
+        public List<RefreshToken>? RefreshTokens { get; set; }
+
+
+
     }
 
 }

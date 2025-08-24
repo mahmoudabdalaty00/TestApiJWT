@@ -34,7 +34,7 @@ namespace TestApiJWT.Controllers
             return Ok(new
             {
                 token = result.Token,
-                ExpiresOn = result.ExpiresIn,
+              //  ExpiresOn = result.ExpiresIn,
             });
 
         }

@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using TestApiJWT.Helpers;
 using TestApiJWT.Models;
@@ -74,7 +75,7 @@ namespace TestApiJWT.Services
             return new AuthModel
             {
                 Email = user.Email,
-                ExpiresIn = jwtSecurity.ValidTo,
+                //ExpiresIn = jwtSecurity.ValidTo,
                 IsAuthenticated = true,
                 Roles = new List<string> { "User" },
                 Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurity),
@@ -127,6 +128,8 @@ namespace TestApiJWT.Services
         }
         #endregion
 
+
+        #region        GetTokenAsync &&   AddRolesAsync
         public async Task<AuthModel> GetTokenAsync(TokenRequestModel model)
         {
 
@@ -157,14 +160,34 @@ namespace TestApiJWT.Services
             authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurity);
             authModel.Email = user.Email;
             authModel.UserName = user.UserName;
-            authModel.ExpiresIn = jwtSecurity.ValidTo;
+            //  authModel.ExpiresIn = jwtSecurity.ValidTo;
             authModel.Roles = roleList.ToList();
 
 
-            return authModel;
+            //we check if the user has any active refresh token or not 
+            if (user.RefreshTokens.Any(t => t.IsActive))
+            {
+                var activeRefreshToken = user.RefreshTokens.First(t => t.IsActive);
+                authModel.RefreshToken = activeRefreshToken.Token;
+                authModel.RefreshTokenExpiration = activeRefreshToken.EpiresOn;
+            }
+
+            else
+            {
+                var refreshToken = GenerateRefreshToken();
+                authModel.RefreshToken = refreshToken.Token;
+                authModel.RefreshTokenExpiration = refreshToken.EpiresOn;
+                user.RefreshTokens.Add(refreshToken);
+
+                await _userManager.UpdateAsync(user);
+            }
+
+
+
+                return authModel;
 
         }
-     
+
         public async Task<string> AddRolesAsync(AddRoleModel model)
         {
             var user = await _userManager.FindByIdAsync(model.UserId);
@@ -189,8 +212,36 @@ namespace TestApiJWT.Services
             var result = await _userManager.AddToRoleAsync(user, model.Role);
 
             return result.Succeeded ? string.Empty : "Something went wrong";
-              
+
 
         }
+        #endregion 
+
+
+        private RefreshToken GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            //Old way to generate random number 
+            // using var generator = new RNGCryptoServiceProvider();
+            // generator.GetBytes(randomNumber);
+
+            // this is new way
+            RandomNumberGenerator.Fill(randomNumber);
+            return new RefreshToken
+            {
+                Token = Convert.ToBase64String(randomNumber),
+                EpiresOn = DateTime.UtcNow.AddDays(10),
+                CreatedOn = DateTime.UtcNow
+            };
+
+        }
+
+
+
+
+
+
+
+
     }
 }

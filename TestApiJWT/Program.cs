@@ -54,7 +54,12 @@ builder.Services.AddAuthentication(o =>
             ValidateLifetime = true,
             ValidIssuer = builder.Configuration["JWT:Issuer"],
             ValidAudience = builder.Configuration["JWT:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"])),  
+
+            // when the token expired the jwt give it more time before stop it 
+            //it is a default time and if i want to stop it i  added this line
+             ClockSkew = TimeSpan.Zero, 
+             
         };
     });
 
