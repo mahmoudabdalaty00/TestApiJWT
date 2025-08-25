@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,6 +15,7 @@ namespace TestApiJWT.Services
         Task<AuthModel> RegisterAsync(RegisterModel model);
         Task<AuthModel> GetTokenAsync(TokenRequestModel model);
         Task<string> AddRolesAsync(AddRoleModel model);
+        Task<AuthModel> RefreshTokenAsync(string token);
     }
 
 
@@ -184,7 +186,7 @@ namespace TestApiJWT.Services
 
 
 
-                return authModel;
+            return authModel;
 
         }
 
@@ -215,9 +217,9 @@ namespace TestApiJWT.Services
 
 
         }
-        #endregion 
+        #endregion
 
-
+        #region Private Methods
         private RefreshToken GenerateRefreshToken()
         {
             var randomNumber = new byte[32];
@@ -235,13 +237,57 @@ namespace TestApiJWT.Services
             };
 
         }
+        #endregion
+        public async Task<AuthModel> RefreshTokenAsync(string token)
+        {
+            var authModel = new AuthModel();
+
+            var user = await _userManager.Users.SingleOrDefaultAsync(
+                s => s.RefreshTokens.Any(t => t.Token == token)
+                );
+
+            //here we make sure that user exist already
+            if (user == null)
+            {
+                authModel.IsAuthenticated = false;
+                authModel.Message = "Invalid Token";
+                return authModel;
+            }
+
+            // after we sure that user exist , we check token expireDate
+            var refreshToken = user.RefreshTokens.Single(t => t.Token == token);
+            if (!refreshToken.IsActive)
+            {
+                authModel.IsAuthenticated = false;
+                authModel.Message = "Inactive Token";
+                return authModel;
+            }
+
+
+            //here we revoked the refreshToken 
+            refreshToken.RevokedOn = DateTime.UtcNow;
+
+            //here we generate our new refreshToken
+            var NewrefreshToken = GenerateRefreshToken();
+            user.RefreshTokens.Add(refreshToken);
+            await _userManager.UpdateAsync(user);
+
+            //generate bour new Jwt Token
+            var jwtToken = await CreateJWTToken(user);
+
+            //here we initalize our authMdel again to update it,
+            authModel.IsAuthenticated = true;
+            authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtToken);
+            authModel.Email = user.Email;
+            authModel.UserName = user.UserName;
+            var roles = await _userManager.GetRolesAsync(user);
+            authModel.Roles = roles.ToList();
+            authModel.RefreshToken = NewrefreshToken.Token;
+            authModel.RefreshTokenExpiration = NewrefreshToken.EpiresOn;    
 
 
 
-
-
-
-
-
+            return authModel;
+        }
     }
 }
