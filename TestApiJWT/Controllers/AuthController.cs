@@ -34,7 +34,7 @@ namespace TestApiJWT.Controllers
             return Ok(new
             {
                 token = result.Token,
-              //  ExpiresOn = result.ExpiresIn,
+                 ExpiresOn = result.ExpiresIn,
             });
 
         }
@@ -61,12 +61,12 @@ namespace TestApiJWT.Controllers
 
 
             return Ok(
-            //    new
-            //{
-            //    token = result.Token,
-            //    ExpiresOn = result.ExpiresIn,
-            //}
-                result
+                new
+                {
+                    token = result.Token,
+                    ExpiresOn = result.ExpiresIn,
+                }
+            //   result
             );
 
         }
@@ -89,9 +89,8 @@ namespace TestApiJWT.Controllers
             return Ok(model);
 
         }
-
-
-        [HttpGet("refreshToken")]
+   
+        [HttpGet("refresh-token")]
          public async Task<IActionResult> RefreshToken()
         {
             var refreshToken = Request.Cookies["RefreshToken"];
@@ -107,6 +106,28 @@ namespace TestApiJWT.Controllers
             return Ok(result);
 
         }
+
+        [HttpPost("revoke-token")]
+        public async Task<IActionResult> RevokeToken([FromBody] RevokeToken model )
+        {
+            //select the token sent in model 
+            var token = model.Token ?? Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Token is required");
+            }
+
+            var result = await _authService.RevokeTokenAsync(token);
+
+            if (!result)
+            {
+                return BadRequest("Token is required");
+            }
+
+            return Ok();
+        }
+
 
 
 

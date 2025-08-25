@@ -13,7 +13,7 @@ namespace TestApiJWT.Models
 
 
         public string Token { get; set; }
-        //public DateTime ExpiresIn { get; set; }
+        public DateTime ExpiresIn { get; set; }
 
 
 

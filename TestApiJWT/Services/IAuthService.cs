@@ -16,6 +16,8 @@ namespace TestApiJWT.Services
         Task<AuthModel> GetTokenAsync(TokenRequestModel model);
         Task<string> AddRolesAsync(AddRoleModel model);
         Task<AuthModel> RefreshTokenAsync(string token);
+        Task<bool> RevokeTokenAsync(string token);
+
     }
 
 
@@ -238,8 +240,43 @@ namespace TestApiJWT.Services
 
         }
         #endregion
-   
-        
+
+        public async Task<bool> RevokeTokenAsync(string token)
+        {
+           //select user by token 
+           var user = await _userManager.Users.SingleOrDefaultAsync(
+               u => u.RefreshTokens
+                    .Any(u => u.Token == token));
+
+            if (user == null) 
+            { 
+                return false;
+            }
+
+           //select refreshtoken after make sure that user exist
+             var refreshToken = user.RefreshTokens.Single(t => t.Token == token);
+
+            if(!refreshToken.IsActive)
+            {
+                return false;
+            }
+
+             refreshToken.RevokedOn =DateTime.UtcNow;
+
+             await _userManager.UpdateAsync(user);
+
+            return true;
+
+        }
+
+
+
+
+
+
+
+
+
         public async Task<AuthModel> RefreshTokenAsync(string token)
         {
             var authModel = new AuthModel();
@@ -285,13 +322,13 @@ namespace TestApiJWT.Services
             var roles = await _userManager.GetRolesAsync(user);
             authModel.Roles = roles.ToList();
             authModel.RefreshToken = NewrefreshToken.Token;
-            authModel.RefreshTokenExpiration = NewrefreshToken.EpiresOn;    
+            authModel.RefreshTokenExpiration = NewrefreshToken.EpiresOn;
 
 
 
             return authModel;
         }
-    
-    
+
+
     }
 }
