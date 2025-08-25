@@ -238,6 +238,8 @@ namespace TestApiJWT.Services
 
         }
         #endregion
+   
+        
         public async Task<AuthModel> RefreshTokenAsync(string token)
         {
             var authModel = new AuthModel();
@@ -289,5 +291,7 @@ namespace TestApiJWT.Services
 
             return authModel;
         }
+    
+    
     }
 }

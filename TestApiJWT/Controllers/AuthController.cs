@@ -38,8 +38,7 @@ namespace TestApiJWT.Controllers
             });
 
         }
-    
-
+  
         [HttpPost("token")]
         public async Task<IActionResult> GetTokenAsync([FromBody] TokenRequestModel model)
         {
@@ -71,9 +70,7 @@ namespace TestApiJWT.Controllers
             );
 
         }
-
-
-
+   
         [HttpPost("AddRolesAsync")]
         public async Task<IActionResult> AddRolesAsync([FromBody] AddRoleModel model)
         {
@@ -94,8 +91,22 @@ namespace TestApiJWT.Controllers
         }
 
 
+        [HttpGet("refreshToken")]
+         public async Task<IActionResult> RefreshToken()
+        {
+            var refreshToken = Request.Cookies["RefreshToken"];
 
+            var result = await _authService.RefreshTokenAsync(refreshToken);
 
+            if(!result.IsAuthenticated)
+            {
+                return BadRequest(result);
+            }
+            SetRefreshTokenInCookie(result.RefreshToken,result.RefreshTokenExpiration);
+
+            return Ok(result);
+
+        }
 
 
 
